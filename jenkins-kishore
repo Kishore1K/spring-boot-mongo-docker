@@ -1,0 +1,24 @@
+node{
+    stage("Git Checkout"){
+        git credentialsId: 'GIT_CREDENTIALS', url: 'https://github.com/Kishore1K/spring-boot-mongo-docker.git'
+    }
+    stage("Maven Build"){
+        sh"mvn clean package"
+    }
+    stage("Docker build"){
+        sh"docker build -t kishore1k/spring-boot-mongo ."
+    }
+    stage("Docker Push "){
+        withCredentials([string(credentialsId: 'DOCKER_KEY_CRED', variable: 'DOCKER_KEY_CRED')]) {
+            sh "docker login -u kishore1k -p ${DOCKER_KEY_CRED}"
+        }
+        sh"docker push kishore1k/spring-boot-mongo"
+    }
+      stage("Deploy To Kuberates Cluster"){
+       kubernetesDeploy(
+         configs: 'springBootMongo.yml', 
+         kubeconfigId: 'KUBERNETES_CLUSTER_CONFIG',
+         enableConfigSubstitution: true
+        )
+     }
+}
